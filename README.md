@@ -5,7 +5,7 @@ BlueZ provides support for the core Bluetooth layers and protocols. It is flexib
 
 ### BlueZ Raspberry Pi 3b+ installation.
 
-1. Download last version at [paxina oficial](http://www.bluez.org). If you prefer also can use the following command:
+1. Download last version at [official page](http://www.bluez.org). If you prefer also can use the following command:
 
 ```console
 	wget http://www.kernel.org/pub/linux/bluetooth/bluez-5.37.tar.xz
