@@ -12,22 +12,40 @@ void print_packet_info(BluetoothDeviceInfo *bt_dev_info);
 
 int main(int argc, char *argv[])
 {
-	char errbuf [100];
+	char errbuf [PCAP_ERRBUF_SIZE];
 	char *dev = "bluetooth0";
 	int packet_limit = 1;
 	int timeout = 10000;
 	const u_char *packet;
 	struct pcap_pkthdr packet_header;
 
+	
 	printf("Opening device %s for sniffing...\n", dev);
 	handle = pcap_open_live(dev, BUFSIZ, packet_limit, timeout, errbuf);
 	if (handle == NULL) {
 		fprintf(stderr, "Couldn't open device %s: %s\n", dev, errbuf);
 		return(2);
 	}
-	printf("Done\n");
-	printf("Link-Layer Header Type %i\n\n", pcap_datalink(handle));
+	printf("Done\n\n");
 
+/*
+	printf("Creating file to live capturing...\n");
+	handle = pcap_create(NULL,errbuf);
+	if(handle == NULL){
+		fprintf(stderr, "Couldn't create pcap_t file: %s\n", errbuf);
+		return (2);
+	}
+	printf("File succesfully create\n");
+	int func_return = pcap_activate(handle);
+	if(handle != 0){
+		fprintf(stderr, "Couldn't activate packet capture file: %s\n",pcap_statustostr(func_return));
+		pcap_close(savefile);
+		return(2);
+	}
+	printf("File succesfully activated\n");
+
+	// Chamar a ubertooth-btle e gardar o output no mesmo ficheiro usando pcap_file()
+*/
 	pcap_loop(handle, 0, hci_packet_processor, NULL);
 	
 	return(0);

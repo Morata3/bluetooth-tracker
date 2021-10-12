@@ -19,12 +19,11 @@
 
 typedef struct {
   char *mac_addr;
-  char *dev_name;
-  int8_t dbm_signal;
+  int dbm_signal;
 
 } BluetoothDeviceInfo;
 
-
+void free_dev_info(BluetoothDeviceInfo *bt_info);
 void set_dev_info(BluetoothDeviceInfo *bt_info, const u_char *packet);
 char * get_dev_addr(BluetoothDeviceInfo *bt_info);
 int8_t get_dev_rssi(BluetoothDeviceInfo *bt_info);
