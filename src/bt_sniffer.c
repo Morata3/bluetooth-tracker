@@ -1,70 +1,79 @@
 #include <stdio.h>
+#include <stdlib.h>
 #include <pcap.h>
+#include <pthread.h>
 #include <bluetooth/bluetooth.h>
 #include <bluetooth/hci.h>
 #include <bluetooth/hci_lib.h>
+#include <sys/prctl.h>
+#include <signal.h>
 #include "device_info/bt_device_info.h"
 
 pcap_t *handle;
+pthread_t ubertooth_id;
+pid_t ubertooth_pid;
 
-void hci_packet_processor(u_char *args, const struct pcap_pkthdr *header, const u_char *packet);
+int packet_processor();
 void print_packet_info(BluetoothDeviceInfo *bt_dev_info);
+void ubertooth_btle();
 
 int main(int argc, char *argv[])
 {
 	char errbuf [PCAP_ERRBUF_SIZE];
-	char *dev = "bluetooth0";
-	int packet_limit = 1;
-	int timeout = 10000;
-	const u_char *packet;
-	struct pcap_pkthdr packet_header;
+	int pcap_return = 0; 
+	FILE *capture;
 
-	
-	printf("Opening device %s for sniffing...\n", dev);
-	handle = pcap_open_live(dev, BUFSIZ, packet_limit, timeout, errbuf);
-	if (handle == NULL) {
-		fprintf(stderr, "Couldn't open device %s: %s\n", dev, errbuf);
-		return(2);
+	capture = fopen("/tmp/pipe", "w+");
+	if(capture == NULL){
+		printf("Couldn't open file\n");
+		exit(1);
 	}
-	printf("Done\n\n");
 
-/*
-	printf("Creating file to live capturing...\n");
-	handle = pcap_create(NULL,errbuf);
+	ubertooth_pid = fork();
+	if(ubertooth_pid == 0){
+		setpgid(getpid(),getpid()); //Move the process to another group process
+		ubertooth_btle();
+	}
+	sleep(1);
+	handle = pcap_fopen_offline(capture, errbuf);
 	if(handle == NULL){
-		fprintf(stderr, "Couldn't create pcap_t file: %s\n", errbuf);
-		return (2);
+	       	printf("Error opening file: %s\n",errbuf);
+		exit(1);
 	}
-	printf("File succesfully create\n");
-	int func_return = pcap_activate(handle);
-	if(handle != 0){
-		fprintf(stderr, "Couldn't activate packet capture file: %s\n",pcap_statustostr(func_return));
-		pcap_close(savefile);
-		return(2);
-	}
-	printf("File succesfully activated\n");
 
-	// Chamar a ubertooth-btle e gardar o output no mesmo ficheiro usando pcap_file()
-*/
-	pcap_loop(handle, 0, hci_packet_processor, NULL);
+	//pcap_return = pcap_loop(handle, -1, packet_processor, NULL);
 	
+	pcap_return = packet_processor();
+	printf("\nClosing...\n");
+	kill(-ubertooth_pid,SIGKILL); //Use negative pid to kill all process of the group
+	
+	fclose(capture);
+
 	return(0);
 }
 
-void hci_packet_processor(u_char *args, const struct pcap_pkthdr *header, const u_char *packet)
+int packet_processor()
 {
-	const u_char hci_type_event = 0x04;
-	const u_char event_inquiry_result = 0x2f;
-	int buffer_lenght = header-> caplen;
-		
+	const u_char * packet_data;
+	struct pcap_pkthdr * packet_header;
+	int pcap_next_res = 0;
 	BluetoothDeviceInfo bt_dev_info;
 
-	if(packet[HCI_PKT_TYPE] == hci_type_event && packet[HCI_EVT_CODE] == event_inquiry_result){
-		set_dev_info(&bt_dev_info, packet);
-		print_packet_info(&bt_dev_info);
-	}	
+	pcap_next_res =  pcap_next_ex(handle, &packet_header, &packet_data);
+	while(pcap_next_res >= 0 || pcap_next_res == PCAP_ERROR_BREAK){
+		printf("MAC %02X:%02X:%02X:%02X:%02X:%02X\n",packet_data[21],packet_data[20],packet_data[19],packet_data[18],packet_data[17],packet_data[16]);
+		pcap_next_res =  pcap_next_ex(handle, &packet_header, &packet_data);
+	}
 
-	return;
+	printf("Error processing packet: %s",pcap_statustostr(pcap_next_res));
+		
+
+	/*
+	set_dev_info(&bt_dev_info, packet);
+	print_packet_info(&bt_dev_info);
+	*/
+
+	return pcap_next_res;
 }
 
 void print_packet_info(BluetoothDeviceInfo *bt_dev_info)
@@ -73,3 +82,15 @@ void print_packet_info(BluetoothDeviceInfo *bt_dev_info)
 	printf("RSSI: %d dBm\n",get_dev_rssi(bt_dev_info));
 }
 
+void ubertooth_btle(){
+	int index;
+	char ubertooth_command[100];
+
+	while(1){
+		index = 37;
+		for(index = 37; index <= 39; index ++){
+			sprintf(ubertooth_command, "ubertooth-btle -f -A %i -q /tmp/pipe > /dev/null 2>&1",index);
+			system(ubertooth_command);
+		}	
+	}
+}

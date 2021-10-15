@@ -3,8 +3,6 @@
 BtInfoList bt_info_list;
 void (*publish_function) (char*);
 
-// FALTAN OS SEMAFOROS
-
 void initialize_list(size_t initial_size){
 
 	bson_t **info_list_pointer = malloc(initial_size *sizeof(bson_t));
@@ -37,6 +35,8 @@ void publish_list(){
 
 void set_list_pointer(){
 
+	sem_wait(&(bt_info_list.list_sem));
+
 	if(bt_info_list.used == bt_info_list.size){
 		printf("Assigning more memory to list\n");
 		bson_t **list_pointer = realloc(bt_info_list.list, 10*bt_info_list.size * sizeof(bson_t *));
@@ -50,12 +50,21 @@ void set_list_pointer(){
 			printf("Memory assigned to list succesfully\n");
 		}
 	}
+
+	sem_post(&(bt_info_list.list_sem));
 }
 
-
+void init_list(size_t initial_size){
+	sem_init(&(bt_info_list.list_sem), 0, 1);
+	sem_wait(&(bt_info_list.list_sem));
+	initialize_list(initial_size);
+	sem_post(&(bt_info_list.list_sem));
+}
 
 void insert_in_list(char *detected_mac, char *host_mac, int dbm_signal){
 	
+	sem_post(&(bt_info_list.list_sem));
+
 	bson_t *bt_info = bson_new();
 
 	BSON_APPEND_UTF8(bt_info, "mac", detected_mac);
@@ -64,12 +73,19 @@ void insert_in_list(char *detected_mac, char *host_mac, int dbm_signal){
 	BSON_APPEND_INT64(bt_info, "timestamp", (uint64_t)time(NULL) * 1000);
 
 	bt_info_list.list[bt_info_list.used++] = bt_info;
+
+	sem_post(&(bt_info_list.list_sem));
 }
 
 void free_probe_list(){
+	
+	sem_wait(&(bt_info_list.list_sem));
+
 	int index = 0;
 	for(index = 0; index < bt_info_list.used; index++) bson_destroy(bt_info_list.list[index]);
 	free(bt_info_list.list);
 	bt_info_list.list = NULL;
 	bt_info_list.used = bt_info_list.size = 0;
+	
+	sem_post(&(bt_info_list.list_sem));
 }
