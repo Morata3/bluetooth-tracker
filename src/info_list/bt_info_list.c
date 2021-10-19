@@ -17,7 +17,32 @@ void initialize_list(size_t initial_size){
 }
 
 char * get_list_message(){
+	
+	int index;
+	size_t message_size = 0;
+	int printed_chars = 0;
+	char *list_message;
+	list_message = malloc(sizeof(char));
+	list_message[printed_chars] = '{';
+	printed_chars ++;
+	message_size ++;
+	for(index = bt_info_list.used -1; index > -1; index --){
+		size_t bt_info_size;
+		char *bt_info_string = bson_as_relaxed_extended_json(bt_info_list.list[index], &bt_info_size);
 
+		message_size += bt_info_size +12; //Add 12 for "bt_info:" string
+		list_message = realloc(list_message, message_size);
+
+		if(index == 0) printed_chars += snprintf((list_message + printed_chars), (message_size - printed_chars) +1, "\"bt_info\":%s}", bt_info_string);
+		else printed_chars += snprintf((list_message + printed_chars), (message_size - printed_chars) +1, "\"bt_info\":%s,", bt_info_string);
+		bson_free(bt_info_string);
+		bson_destroy(bt_info_list.list[index]);
+		bt_info_list.size -= 1;
+		bt_info_list.list = realloc(bt_info_list.list, bt_info_list.size * sizeof(bson_t*));
+	}
+
+	printf("Done. Message : %s\n", list_message);
+	return list_message;
 	
 }
 
@@ -61,15 +86,16 @@ void init_list(size_t initial_size){
 	sem_post(&(bt_info_list.list_sem));
 }
 
-void insert_in_list(char *detected_mac, char *host_mac, int dbm_signal){
+void insert_in_list(char *detected_mac, char *host_mac, int dbm_signal, bool random){
 	
-	sem_post(&(bt_info_list.list_sem));
+	sem_wait(&(bt_info_list.list_sem));
 
 	bson_t *bt_info = bson_new();
 
 	BSON_APPEND_UTF8(bt_info, "mac", detected_mac);
 	BSON_APPEND_UTF8(bt_info, "routerID", host_mac);
 	BSON_APPEND_INT32(bt_info, "signal", dbm_signal);
+	BSON_APPEND_BOOL(bt_info, "random", random);
 	BSON_APPEND_INT64(bt_info, "timestamp", (uint64_t)time(NULL) * 1000);
 
 	bt_info_list.list[bt_info_list.used++] = bt_info;
@@ -77,7 +103,7 @@ void insert_in_list(char *detected_mac, char *host_mac, int dbm_signal){
 	sem_post(&(bt_info_list.list_sem));
 }
 
-void free_probe_list(){
+void free_info_list(){
 	
 	sem_wait(&(bt_info_list.list_sem));
 
@@ -88,4 +114,29 @@ void free_probe_list(){
 	bt_info_list.used = bt_info_list.size = 0;
 	
 	sem_post(&(bt_info_list.list_sem));
+}
+
+int check_device_in_list(char *detected_mac){
+
+	int index;
+	bson_iter_t list_iterator;
+	const bson_value_t *list_mac_value;
+	char *mac_value;
+
+	sem_wait(&(bt_info_list.list_sem));
+	for(index = 0; index < bt_info_list.used; index ++){
+		bson_t *info_in_list = bt_info_list.list[index];
+		if(bson_iter_init_find(&list_iterator, info_in_list, "mac") && BSON_ITER_HOLDS_UTF8 (&list_iterator)){
+			list_mac_value = bson_iter_value(&list_iterator);
+			mac_value = list_mac_value->value.v_utf8.str;
+		}
+
+		if(strcmp(detected_mac, mac_value) == 0){
+			sem_post(&(bt_info_list.list_sem));
+			return -1;
+		}
+	}		
+	sem_post(&(bt_info_list.list_sem));
+	return 0;
+	
 }

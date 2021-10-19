@@ -48,7 +48,3 @@ BlueZ provides support for the core Bluetooth layers and protocols. It is flexib
 	sudo apt install libbluetooth3
 ```
 
-## PCAP ACTIVATE ISSUES
-
-To run the bluetooth sniffer, need to use superuser permissons, otherwise pcap_active raise an error: PCAP_ERROR_PERM_DENIED 
-

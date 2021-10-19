@@ -2,8 +2,7 @@
 
 #define MQTT_HOST "10.42.0.1"
 #define MQTT_PORT 1883
-#define MQTT_TOPIC "pcap"
-//#define MQTT_TOPIC "Televes"
+#define MQTT_TOPIC "bluetooth"
 
 
 void pcap_publish_message(char *message);
