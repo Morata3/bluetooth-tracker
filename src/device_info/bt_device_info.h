@@ -1,26 +1,34 @@
 #include <string.h>
-//#include <pcap.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdbool.h>
 #include <unistd.h>
-//#include <netinet/in.h>
 #include <unistd.h>
-#include <stdint.h> //for uintX_t
 
-#define BTLE_RSSI 		1
-#define BTLE_PACKET_HEADER	14
 
-// EXTENDED INQUIRY RESPONSE DATA TYPES
-#define TYPE_DEV_ID	0x10
-#define TYPE_DEV_NAME	0x09
-#define TYPE_MANUFACT	0xFF
+// BLE BYTES OF INFORMATION DATA
+#define RSSI 			1
+#define	PACKET_HEADER		14
+
+#define MANUFACTURE		0xFF
+
+// BLE ADVERTISING PDUs TYPES
+#define ADV_IND			0x0
+#define ADV_DIRECT_IND		0x1
+#define ADV_NONCONN_IND		0x2
+#define SCAN_REQ		0x3
+#define SCAN_RSP		0x4
+#define CONNECT_IND		0x5
+#define ADV_SCAN_IND		0x6
+
 
 
 typedef struct {
   char *mac_addr;
   int dbm_signal;
   bool random;
+  int packets_decteted;
+
 
 } BluetoothDeviceInfo;
 

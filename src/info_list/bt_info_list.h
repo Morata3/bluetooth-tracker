@@ -15,5 +15,6 @@ void free_info_list();
 void set_list_pointer();
 char * get_list_message();
 void set_publish_function(void (*bt_publish_function)(char*));
+void publish_list_if_needed();
 int check_device_in_list(char *detected_mac);
 

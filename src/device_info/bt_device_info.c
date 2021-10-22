@@ -6,7 +6,7 @@ void free_dev_info(BluetoothDeviceInfo *bt_info){
 
 void set_dev_info(BluetoothDeviceInfo *bt_info, const u_char *packet, bool random){
 	bt_info->mac_addr = malloc (sizeof(char) * 18);
-	int8_t rssi_dbm = packet[BTLE_RSSI];
+	int8_t rssi_dbm = packet[RSSI];
 	int rssi_int = (int)rssi_dbm;
 	
 	bt_info->dbm_signal = rssi_int;

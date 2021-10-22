@@ -58,8 +58,26 @@ void publish_list(){
 	initialize_list(current_size);
 }
 
-void set_list_pointer(){
+void publish_list_if_needed(){
+	
+	/*
+	int value;
+	sem_getvalue(&(bt_info_list.list_sem),&value);
+	printf("SEMAPHORE : %d\n",value);	
+	*/
 
+	sem_wait(&(bt_info_list.list_sem));
+
+	if(bt_info_list.used > 0){
+		printf("Captured %i devices. Publishing...\n",bt_info_list.used);
+		publish_list();
+	}
+	else printf("List is empty. Publish not necessary\n\n");
+	sem_post(&(bt_info_list.list_sem));
+}
+
+void set_list_pointer(){
+	
 	sem_wait(&(bt_info_list.list_sem));
 
 	if(bt_info_list.used == bt_info_list.size){
@@ -99,7 +117,6 @@ void insert_in_list(char *detected_mac, char *host_mac, int dbm_signal, bool ran
 	BSON_APPEND_INT64(bt_info, "timestamp", (uint64_t)time(NULL) * 1000);
 
 	bt_info_list.list[bt_info_list.used++] = bt_info;
-
 	sem_post(&(bt_info_list.list_sem));
 }
 
@@ -112,7 +129,8 @@ void free_info_list(){
 	free(bt_info_list.list);
 	bt_info_list.list = NULL;
 	bt_info_list.used = bt_info_list.size = 0;
-	
+	printf("List release\n");
+
 	sem_post(&(bt_info_list.list_sem));
 }
 
@@ -140,3 +158,7 @@ int check_device_in_list(char *detected_mac){
 	return 0;
 	
 }
+
+
+
+

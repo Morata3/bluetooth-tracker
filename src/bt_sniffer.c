@@ -13,24 +13,25 @@
 #include "Mqtt/pcap_publisher.h"
 
 pcap_t *handle;
-pid_t ubertooth_pid;
+pid_t ubertooth_pid, parent_pid;
 FILE *capture;
 char *devmac;
-bool breakloop;
+static char *FILENAME = "/tmp/pipe";
 
-void packet_processor();
+void packet_processor(u_char *args, const struct pcap_pkthdr *header, const u_char *buffer);
 void print_packet_info(BluetoothDeviceInfo *bt_dev_info);
-void ubertooth_btle();
+void ubertooth_btle(pid_t parent_pid);
 void disconnect(int s);
 void send_data(int s);
 void getMAC();
-bool is_random(const u_char random);
+bool is_random(const u_char header);
 
 int main(int argc, char *argv[])
 {
 	char errbuf [PCAP_ERRBUF_SIZE];
 	struct sigaction sigint;
 	struct sigaction sigsend;
+	int file_d;
 
 	sigint.sa_handler = disconnect;
 	sigemptyset(&sigint.sa_mask);
@@ -41,7 +42,7 @@ int main(int argc, char *argv[])
 	sigsend.sa_flags = 0;
 
 	sigaction(SIGINT, &sigint, NULL);
-	sigaction(SIGKILL, &sigsend, NULL);
+	sigaction(SIGALRM, &sigsend, NULL);
 
 	// Connect to MQTT
 	pcap_connect();
@@ -49,20 +50,30 @@ int main(int argc, char *argv[])
 	getMAC();
 	init_list(100);
 
-	// Open file to save captures
-	capture = fopen("/tmp/pipe", "w+");
-	if(capture == NULL){
+	// Create pipe for captures
+	unlink(FILENAME);
+	if(mkfifo(FILENAME,0750) == -1){
+		printf("Error creating pipe\n");
+		exit(1);
+	}
+
+	if((file_d = open(FILENAME, O_RDWR)) == -1 ){
+		printf("Error opening pipe\n");
+		exit(1);
+	}
+
+	if((capture = fdopen(file_d, "w+")) == NULL){
 		printf("Couldn't open file\n");
 		exit(1);
 	}
 
 	// Run ubertooth command
+	parent_pid = getpid();
 	ubertooth_pid = fork();
 	if(ubertooth_pid == 0){
 		setpgid(getpid(),getpid()); //Move the process to another group process
-		ubertooth_btle();
+		ubertooth_btle(parent_pid);
 	}
-	sleep(1);
 
 	//Open pcap file
 	handle = pcap_fopen_offline(capture, errbuf);
@@ -71,76 +82,71 @@ int main(int argc, char *argv[])
 		exit(1);
 	}
 
-	breakloop = false;
-
 	// Sniff loop
-	packet_processor();
+	int loop_ret;
+	do{
+		loop_ret = pcap_loop(handle, 0, packet_processor, NULL);
+	}while(loop_ret != PCAP_ERROR_BREAK);
 
 	return(0);
 }
 
-void packet_processor()
+void packet_processor(u_char *args, const struct pcap_pkthdr *header, const u_char *packet_data)
 {
-	const u_char * packet_data;
-	struct pcap_pkthdr * packet_header;
-	int pcap_next_ret = 0;
 	bool random;
+	const u_char packet_header = packet_data[PACKET_HEADER];
+	
 	BluetoothDeviceInfo bt_dev_info;
 
-	pcap_next_ret =  pcap_next_ex(handle, &packet_header, &packet_data);
-	while(pcap_next_ret >= 0 || pcap_next_ret == PCAP_ERROR_BREAK){
-		random = is_random(packet_data[BTLE_PACKET_HEADER]);
-		set_dev_info(&bt_dev_info, packet_data, random);
+	random = is_random(packet_header);
+	set_dev_info(&bt_dev_info, packet_data, random);
 
-		if(check_device_in_list(bt_dev_info.mac_addr) == 0 && !breakloop){
-			set_list_pointer();
-			insert_in_list(bt_dev_info.mac_addr, devmac, bt_dev_info.dbm_signal, bt_dev_info.random);
-			print_packet_info(&bt_dev_info);
-		}
-		free_dev_info(&bt_dev_info);
-		
-		pcap_next_ret =  pcap_next_ex(handle, &packet_header, &packet_data);
-	}	
-	printf("Packet processor interrupted: %s\n",pcap_statustostr(pcap_next_ret));
-
+	if(check_device_in_list(bt_dev_info.mac_addr) == 0){
+		set_list_pointer();
+		insert_in_list(bt_dev_info.mac_addr, devmac, bt_dev_info.dbm_signal, bt_dev_info.random);
+		print_packet_info(&bt_dev_info);
+	}
+	free_dev_info(&bt_dev_info);
+	
 	return;
 }
+
 void print_packet_info(BluetoothDeviceInfo *bt_dev_info)
 {
 	printf("MAC: %s\n", get_dev_addr(bt_dev_info));
 	printf("RSSI: %d dBm\n",get_dev_rssi(bt_dev_info));
 }
 
-void ubertooth_btle(){
+void ubertooth_btle(pid_t parent_pid){
 	int index;
 	char ubertooth_command[100];
-
+	
 	while(1){
-		index = 37;
 		for(index = 37; index <= 39; index ++){
-			sprintf(ubertooth_command, "timeout 5 ubertooth-btle -f -A %i -q /tmp/pipe > /dev/null 2>&1",index);
+			//sprintf(ubertooth_command, "ubertooth-btle -n -A %i -q /tmp/pipe > /dev/null 2>&1",index);
+			sprintf(ubertooth_command, "timeout 5 ubertooth-btle -n -A %i -q %s > /dev/null 2>&1",index, FILENAME);
 			printf("Changing channel to %i\n", index);
-			//sprintf(ubertooth_command, "ubertooth-btle -f -A %i -q /tmp/pipe > /dev/null 2>&1",index);
 			system(ubertooth_command);
-		}	
+		}
+		kill(parent_pid, SIGALRM);
 	}
 }
 
 void disconnect (int s){
 
 	printf("\nClosing...\n");
-	breakloop = true;
-	fclose(capture);
+	pcap_disconnect();
+	pcap_breakloop(handle);
+	pcap_close(handle);
 	free(devmac);
 	free_info_list();
 	kill(-ubertooth_pid,SIGTERM); //Use negative pid to kill all process of the group
-	system("/bin/rm /tmp/pipe");
-	//get_list_message();
+
 }
 
 void send_data(int s){
 	printf("\n\n Enviando lista \n\n");
-
+	publish_list_if_needed();
 }
 
 void getMAC(){
@@ -165,7 +171,7 @@ void getMAC(){
 	    
 }
 
-bool is_random(const u_char random){
-	if( (random >= 0x40 && random < 0x80) || random >= 0xC0) return 1;
+bool is_random(const u_char header){
+	if( (header >= 0x40 && header < 0x80) || header >= 0xC0) return 1;
 	else return 0;
 }
