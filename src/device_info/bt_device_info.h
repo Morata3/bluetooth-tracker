@@ -10,8 +10,6 @@
 #define RSSI 			1
 #define	PACKET_HEADER		14
 
-#define MANUFACTURE		0xFF
-
 // BLE ADVERTISING PDUs TYPES
 #define ADV_IND			0x0
 #define ADV_DIRECT_IND		0x1
@@ -27,13 +25,9 @@ typedef struct {
   char *mac_addr;
   int dbm_signal;
   bool random;
-  int packets_decteted;
-
 
 } BluetoothDeviceInfo;
 
 void free_dev_info(BluetoothDeviceInfo *bt_info);
 void set_dev_info(BluetoothDeviceInfo *bt_info, const u_char *packet,bool random);
-char * get_dev_addr(BluetoothDeviceInfo *bt_info);
-int8_t get_dev_rssi(BluetoothDeviceInfo *bt_info);
 

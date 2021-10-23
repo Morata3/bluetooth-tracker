@@ -60,12 +60,6 @@ void publish_list(){
 
 void publish_list_if_needed(){
 	
-	/*
-	int value;
-	sem_getvalue(&(bt_info_list.list_sem),&value);
-	printf("SEMAPHORE : %d\n",value);	
-	*/
-
 	sem_wait(&(bt_info_list.list_sem));
 
 	if(bt_info_list.used > 0){
