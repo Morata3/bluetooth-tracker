@@ -24,6 +24,7 @@ void packet_processor();
 void ubertooth_btle(pid_t parent_pid);
 void disconnect(int s);
 void send_data(int s);
+void send_and_stop(int s);
 void getMAC();
 bool is_random(const u_char header);
 
@@ -32,6 +33,7 @@ int main(int argc, char *argv[])
 	char errbuf [PCAP_ERRBUF_SIZE];
 	struct sigaction sigint;
 	struct sigaction sigsend;
+	struct sigaction sigsendstop;
 
 	sigint.sa_handler = disconnect;
 	sigemptyset(&sigint.sa_mask);
@@ -40,9 +42,14 @@ int main(int argc, char *argv[])
 	sigsend.sa_handler = send_data;
 	sigemptyset(&sigsend.sa_mask);
 	sigsend.sa_flags = 0;
+	
+	sigsendstop.sa_handler = send_and_stop;
+	sigemptyset(&sigsendstop.sa_mask);
+	sigsendstop.sa_flags = 0;
 
 	sigaction(SIGINT, &sigint, NULL);
 	sigaction(SIGALRM, &sigsend, NULL);
+	sigaction(SIGUSR1, &sigsendstop, NULL);
 
 	// Connect to MQTT
 	pcap_connect();
@@ -78,12 +85,11 @@ int main(int argc, char *argv[])
 	}
 
 	// Sniff loop
-	alarm(TIME_TO_PUBLISH); //Publish list after TIME_TO_PUBLISH seconds
+	//alarm(TIME_TO_PUBLISH); //Publish list after TIME_TO_PUBLISH seconds
 	int loop_ret;
 	do{
 		loop_ret = pcap_loop(handle, 0, packet_processor, NULL);
 	}while(loop_ret != PCAP_ERROR_BREAK);
-	
 
 	return(0);
 }
@@ -91,18 +97,17 @@ int main(int argc, char *argv[])
 void packet_processor(u_char *args, const struct pcap_pkthdr *header, const u_char *packet_data)
 {
 	bool random;
-	const u_char packet_header = packet_data[PACKET_HEADER];
+	const u_char packet_header = packet_data[PACKET_TYPE];
 	const u_char packet_type = packet_header & 0xF;
-	
+
 	if(packet_type <= ADV_NONCONN_IND){
 		BluetoothDeviceInfo bt_dev_info;
-		
 		random = is_random(packet_header);
-		set_dev_info(&bt_dev_info, packet_data, random);
+		set_dev_info(&bt_dev_info, header->caplen, packet_data, random);
 
-		if(check_device_in_list(bt_dev_info.mac_addr) == 0){
+		if(check_device_in_list(bt_dev_info.mac_addr, bt_dev_info.token) == 0){
 			set_list_pointer();
-			insert_in_list(bt_dev_info.mac_addr, devmac, bt_dev_info.dbm_signal, bt_dev_info.random);
+			insert_in_list(bt_dev_info.mac_addr, devmac, bt_dev_info.dbm_signal, bt_dev_info.random, bt_dev_info.token);
 			printf("Type: %X  MAC: %s\n",packet_type,  bt_dev_info.mac_addr);
 		}
 		free_dev_info(&bt_dev_info);
@@ -132,7 +137,13 @@ void disconnect (int s){
 void send_data(int s){
 	printf("\n\n Enviando lista \n\n");
 	publish_list_if_needed();
-	alarm(TIME_TO_PUBLISH); //Restart alarm
+	//alarm(TIME_TO_PUBLISH); //Restart alarm
+}
+
+void send_and_stop(int s){
+	printf("\n System rebooting...\n");
+	send_data(0);
+	disconnect(0);
 }
 
 void getMAC(){

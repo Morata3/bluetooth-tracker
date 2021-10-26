@@ -41,7 +41,7 @@ char * get_list_message(){
 		bt_info_list.list = realloc(bt_info_list.list, bt_info_list.size * sizeof(bson_t*));
 	}
 
-	printf("Done. Message : %s\n", list_message);
+	printf("Done. Message size: %i\n", message_size);
 	return list_message;
 	
 }
@@ -98,17 +98,26 @@ void init_list(size_t initial_size){
 	sem_post(&(bt_info_list.list_sem));
 }
 
-void insert_in_list(char *detected_mac, char *host_mac, int dbm_signal, bool random){
+void insert_in_list(char *detected_mac, char *host_mac, int dbm_signal, bool random, char *token){
 	
 	sem_wait(&(bt_info_list.list_sem));
 
 	bson_t *bt_info = bson_new();
+	bson_t tokens_doc;
+
+	if(bt_info == NULL){
+		publish_list(bt_info_list);
+		bt_info = bson_new();
+	}
 
 	BSON_APPEND_UTF8(bt_info, "mac", detected_mac);
 	BSON_APPEND_UTF8(bt_info, "routerID", host_mac);
 	BSON_APPEND_INT32(bt_info, "signal", dbm_signal);
 	BSON_APPEND_BOOL(bt_info, "random", random);
 	BSON_APPEND_INT64(bt_info, "timestamp", (uint64_t)time(NULL) * 1000);
+	BSON_APPEND_DOCUMENT_BEGIN(bt_info, "tokens", &tokens_doc);
+	BSON_APPEND_UTF8(&tokens_doc, "token", token);
+	bson_append_document_end(bt_info, &tokens_doc);
 
 	bt_info_list.list[bt_info_list.used++] = bt_info;
 	sem_post(&(bt_info_list.list_sem));
@@ -128,12 +137,17 @@ void free_info_list(){
 	sem_post(&(bt_info_list.list_sem));
 }
 
-int check_device_in_list(char *detected_mac){
+int check_device_in_list(char *detected_mac, char *detected_token){
 
-	int index;
+	int index, index_token;
 	bson_iter_t list_iterator;
+	bson_iter_t token_iterator;
 	const bson_value_t *list_mac_value;
+	const bson_value_t *token_doc;
+	const bson_value_t *list_token_value;
 	char *mac_value;
+	char *token_value;
+	bson_t *tokens_list;
 
 	sem_wait(&(bt_info_list.list_sem));
 	for(index = 0; index < bt_info_list.used; index ++){
@@ -142,17 +156,28 @@ int check_device_in_list(char *detected_mac){
 			list_mac_value = bson_iter_value(&list_iterator);
 			mac_value = list_mac_value->value.v_utf8.str;
 		}
-
+		/*if(bson_iter_find(&list_iterator, "tokens") && BSON_ITER_HOLDS_DOCUMENT (&list_iterator)){
+			token_doc = bson_iter_value(&list_iterator);
+			tokens_list = bson_new_from_data(token_doc->value.v_doc.data,token_doc->value.v_doc.data_len);
+			for(index_token = 0; index_token < token_doc->value.v_doc.data_len; index_token ++){
+				bson_t *info_token = &tokens_list[index_token];
+				if(bson_iter_init_find(&token_iterator, info_token, "token") && BSON_ITER_HOLDS_UTF8(&token_iterator)){
+					list_token_value = bson_iter_value(&list_iterator);
+					token_value = list_token_value->value.v_utf8.str;
+				}
+			}
+			printf("%s\n", token_value);
+		}
+		*/
 		if(strcmp(detected_mac, mac_value) == 0){
+			//free(tokens_list);
 			sem_post(&(bt_info_list.list_sem));
 			return -1;
 		}
 	}		
+	//free(tokens_list);
 	sem_post(&(bt_info_list.list_sem));
 	return 0;
 	
 }
-
-
-
 
