@@ -12,7 +12,7 @@
 #include "info_list/bt_info_list.h"
 #include "Mqtt/pcap_publisher.h"
 
-#define TIME_TO_PUBLISH 10
+#define TIME_TO_PUBLISH 60
 
 pcap_t *handle;
 pid_t ubertooth_pid, parent_pid;
@@ -85,7 +85,9 @@ int main(int argc, char *argv[])
 	}
 
 	// Sniff loop
-	//alarm(TIME_TO_PUBLISH); //Publish list after TIME_TO_PUBLISH seconds
+	alarm(TIME_TO_PUBLISH); //Publish list after TIME_TO_PUBLISH seconds
+	printf("Starting sniffer loop...\n");
+	fflush(stdout);
 	int loop_ret;
 	do{
 		loop_ret = pcap_loop(handle, 0, packet_processor, NULL);
@@ -103,12 +105,12 @@ void packet_processor(u_char *args, const struct pcap_pkthdr *header, const u_ch
 	if(packet_type <= ADV_NONCONN_IND){
 		BluetoothDeviceInfo bt_dev_info;
 		random = is_random(packet_header);
-		set_dev_info(&bt_dev_info, header->caplen, packet_data, random);
+		set_dev_info(&bt_dev_info, packet_data, random);
 
-		if(check_device_in_list(bt_dev_info.mac_addr, bt_dev_info.token) == 0){
+		if(check_device_in_list(bt_dev_info.mac_addr) == 0){
 			set_list_pointer();
-			insert_in_list(bt_dev_info.mac_addr, devmac, bt_dev_info.dbm_signal, bt_dev_info.random, bt_dev_info.token);
-			printf("Type: %X  MAC: %s\n",packet_type,  bt_dev_info.mac_addr);
+			insert_in_list(bt_dev_info.mac_addr, devmac, bt_dev_info.dbm_signal, bt_dev_info.random, "LL");
+			//printf("Type: %X  MAC: %s\n",packet_type,  bt_dev_info.mac_addr);
 		}
 		free_dev_info(&bt_dev_info);
 	}
@@ -137,7 +139,7 @@ void disconnect (int s){
 void send_data(int s){
 	printf("\n\n Enviando lista \n\n");
 	publish_list_if_needed();
-	//alarm(TIME_TO_PUBLISH); //Restart alarm
+	alarm(TIME_TO_PUBLISH); //Restart alarm
 }
 
 void send_and_stop(int s){

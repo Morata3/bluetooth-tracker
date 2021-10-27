@@ -9,8 +9,9 @@
 // BLE BYTES OF INFORMATION DATA
 #define RSSI 			1
 #define	PACKET_TYPE		14
-#define PACKET_HEADER_LENGHT	24
-#define CRC_LENGHT		3
+#define TOKEN_BYTE_INIT		24
+#define TOKEN_BYTE_END		31
+#define TOKEN_LENGHT		7
 
 // BLE ADVERTISING PDUs TYPES
 #define ADV_IND			0x0
@@ -32,5 +33,5 @@ typedef struct {
 } BluetoothDeviceInfo;
 
 void free_dev_info(BluetoothDeviceInfo *bt_info);
-void set_dev_info(BluetoothDeviceInfo *bt_info, int header_lenght, const u_char *packet,bool random);
+void set_dev_info(BluetoothDeviceInfo *bt_info, const u_char *packet,bool random);
 
