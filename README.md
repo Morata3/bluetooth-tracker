@@ -1,5 +1,7 @@
 # System for tracking Bluetooth device sniffing their packets.
 
+This system contain two differents aproches. One of them is based on passive scanning via Ubertooth. The other one uses the HCI interface to perform active scanning of nearby devices. The bluetooth classic device are only detected by active scanning.
+
 ## Ubertooth software.
 [Build guide](https://ubertooth.readthedocs.io/en/latest/build_guide.html)
 
