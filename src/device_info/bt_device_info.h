@@ -7,7 +7,7 @@
 
 
 // BLE BYTES OF INFORMATION DATA
-#define RSSI 			1
+#define BLE_RSSI		1
 #define	PACKET_TYPE		14
 #define TOKEN_BYTE_INIT		24
 #define TOKEN_BYTE_END		31
@@ -22,16 +22,32 @@
 #define CONNECT_IND		0x5
 #define ADV_SCAN_IND		0x6
 
+//HCI MACROS
+#define HCI_EVENT_FRAME		5
+#define HCI_MAC_TYPE		10
+#define HCI_EVENT_RESULT	0x2f
+#define HCI_EVENT_BLE		0x3E
+#define HCI_RSSI		21
+#define MAJOR_DEVICE_CLASS	17
+
+//MAJOR DEVICE CLASS
+#define MC_COMPUTER		0x01
+#define MC_PHONE		0x02
+#define MC_WEREABLE		0x07
 
 
 typedef struct {
   char *mac_addr;
   char *token;
   int dbm_signal;
-  bool random;
+  char *mac_type;
+  char *dev_class;
 
 } BluetoothDeviceInfo;
 
-void free_dev_info(BluetoothDeviceInfo *bt_info);
-void set_dev_info(BluetoothDeviceInfo *bt_info, const u_char *packet,bool random);
+void free_ble_dev_info(BluetoothDeviceInfo *bt_info);
+void free_hci_dev_info(BluetoothDeviceInfo *bt_info);
+void set_ble_dev_info(BluetoothDeviceInfo *bt_info, const u_char *packet, bool random);
+void set_hci_dev_info(BluetoothDeviceInfo *bt_info, const u_char *packet);
+void set_hci_ble_info(BluetoothDeviceInfo *bt_info, const u_char *packet, int last_byte);
 

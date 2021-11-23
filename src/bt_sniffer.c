@@ -21,7 +21,7 @@ char *devmac;
 static char *FILENAME = "/tmp/pipe";
 
 void packet_processor();
-void ubertooth_btle(pid_t parent_pid);
+void ubertooth_btle();
 void disconnect(int s);
 void send_data(int s);
 void send_and_stop(int s);
@@ -57,6 +57,10 @@ int main(int argc, char *argv[])
 	getMAC();
 	init_list(100);
 
+	// Connect to MQTT Logger
+	//set_log_topic(devmac);
+	//log_connect();
+
 	// Create pipe for captures
 	unlink(FILENAME);
 	if(mkfifo(FILENAME,0750) == -1){
@@ -65,11 +69,10 @@ int main(int argc, char *argv[])
 	}
 
 	// Run ubertooth command
-	parent_pid = getpid();
 	ubertooth_pid = fork();
 	if(ubertooth_pid == 0){
 		setpgid(getpid(),getpid()); //Move the process to another group process
-		ubertooth_btle(parent_pid);
+		ubertooth_btle();
 	}
 
 	if((capture = fopen(FILENAME, "r")) == NULL){
@@ -87,6 +90,7 @@ int main(int argc, char *argv[])
 	// Sniff loop
 	alarm(TIME_TO_PUBLISH); //Publish list after TIME_TO_PUBLISH seconds
 	printf("Starting sniffer loop...\n");
+	//log_publish_message("Starting sniffer...\n");
 	fflush(stdout);
 	int loop_ret;
 	do{
@@ -105,23 +109,25 @@ void packet_processor(u_char *args, const struct pcap_pkthdr *header, const u_ch
 	if(packet_type <= ADV_NONCONN_IND){
 		BluetoothDeviceInfo bt_dev_info;
 		random = is_random(packet_header);
-		set_dev_info(&bt_dev_info, packet_data, random);
+		set_ble_dev_info(&bt_dev_info, packet_data, random);
 
 		if(check_device_in_list(bt_dev_info.mac_addr) == 0){
 			set_list_pointer();
-			insert_in_list(bt_dev_info.mac_addr, devmac, bt_dev_info.dbm_signal, bt_dev_info.random, "LL");
-			//printf("Type: %X  MAC: %s\n",packet_type,  bt_dev_info.mac_addr);
+			insert_ble_in_list(bt_dev_info.mac_addr, devmac, bt_dev_info.dbm_signal, bt_dev_info.mac_type, bt_dev_info.token);
+			printf("MAC: %s --> TYPE: %s\n",  bt_dev_info.mac_addr, bt_dev_info.mac_type);
+			//log_publish_message("New packet...\n");
 		}
-		free_dev_info(&bt_dev_info);
+		free_ble_dev_info(&bt_dev_info);
 	}
 	return;
 }
 
-void ubertooth_btle(pid_t parent_pid){
+void ubertooth_btle(){
 	char ubertooth_command[50];
-	
-	sprintf(ubertooth_command, "ubertooth-btle -f -q %s > /dev/null 2>&1", FILENAME);
-	system(ubertooth_command);
+	while(1){
+		sprintf(ubertooth_command, "timeout 60 ubertooth-btle -n -q %s > /dev/null 2>&1", FILENAME);
+		system(ubertooth_command);
+	}
 }
 
 void disconnect (int s){

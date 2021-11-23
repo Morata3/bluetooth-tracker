@@ -10,7 +10,8 @@ typedef struct{
 }BtInfoList;
 
 void init_list(size_t initial_size);
-void insert_in_list(char *detected_mac, char *host_mac, int dbm_signal, bool random, char *token);
+void insert_ble_in_list(char *detected_mac, char *host_mac, int dbm_signal, char *address_type, char *token);
+void insert_hci_in_list(char *detected_mac, char *host_mac, int dbm_signal, char *address_type, char *dev_class);
 void free_info_list();
 void set_list_pointer();
 char * get_list_message();

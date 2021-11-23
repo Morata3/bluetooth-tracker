@@ -1,0 +1,15 @@
+[Unit]
+Description=Bluetooth nearby devices scanner
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=forking
+User=root
+Group=root
+ExecStart= /usr/bin/stdbuf -oL /usr/src/bluetooth_sniffer/launch_bt_scanner.sh
+StandardOutput=file:/var/log/bluetooth_sniffer/bluetooth_scanner.log
+
+[Install]
+WantedBy=multi-user.target
+

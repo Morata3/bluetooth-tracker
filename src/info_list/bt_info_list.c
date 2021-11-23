@@ -98,7 +98,7 @@ void init_list(size_t initial_size){
 	sem_post(&(bt_info_list.list_sem));
 }
 
-void insert_in_list(char *detected_mac, char *host_mac, int dbm_signal, bool random, char *token){
+void insert_ble_in_list(char *detected_mac, char *host_mac, int dbm_signal, char *address_type, char *token){
 	
 	sem_wait(&(bt_info_list.list_sem));
 
@@ -111,9 +111,30 @@ void insert_in_list(char *detected_mac, char *host_mac, int dbm_signal, bool ran
 	BSON_APPEND_UTF8(bt_info, "mac", detected_mac);
 	BSON_APPEND_UTF8(bt_info, "routerID", host_mac);
 	BSON_APPEND_INT32(bt_info, "signal", dbm_signal);
-	BSON_APPEND_BOOL(bt_info, "random", random);
+	BSON_APPEND_UTF8(bt_info, "macType", address_type);
 	BSON_APPEND_INT64(bt_info, "timestamp", (uint64_t)time(NULL) * 1000);
 	BSON_APPEND_UTF8(bt_info, "token", token);
+
+	bt_info_list.list[bt_info_list.used++] = bt_info;
+	sem_post(&(bt_info_list.list_sem));
+}
+
+void insert_hci_in_list(char *detected_mac, char *host_mac, int dbm_signal,char *address_type, char *dev_class){
+	
+	sem_wait(&(bt_info_list.list_sem));
+
+	bson_t *bt_info = bson_new();
+	if(bt_info == NULL){
+		publish_list(bt_info_list);
+		bt_info = bson_new();
+	}
+
+	BSON_APPEND_UTF8(bt_info, "mac", detected_mac);
+	BSON_APPEND_UTF8(bt_info, "routerID", host_mac);
+	BSON_APPEND_UTF8(bt_info, "macType", address_type);
+	BSON_APPEND_INT32(bt_info, "signal", dbm_signal);
+	BSON_APPEND_INT64(bt_info, "timestamp", (uint64_t)time(NULL) * 1000);
+	BSON_APPEND_UTF8(bt_info, "class", dev_class);
 
 	bt_info_list.list[bt_info_list.used++] = bt_info;
 	sem_post(&(bt_info_list.list_sem));

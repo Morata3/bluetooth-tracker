@@ -6,11 +6,13 @@
 #include "pcap_publisher.h"
 
 struct mosquitto *mosq;
-void connect_callback(struct mosquitto *mosq, void *obj, int result);
-void publish_callback(struct mosquitto *mosq, void *obj, int mid);
-void disconnect_callback(struct mosquitto *mosq, void *obj, int rc);
+void log_connect_callback(struct mosquitto *mosq, void *obj, int result);
+void log_publish_callback(struct mosquitto *mosq, void *obj, int mid);
+void log_disconnect_callback(struct mosquitto *mosq, void *obj, int rc);
 
-void connect_callback(struct mosquitto *mosq, void *obj, int result) {
+char *MQTT_LOG_TOPIC;
+
+void log_connect_callback(struct mosquitto *mosq, void *obj, int result) {
 	switch (result) {
 		case 0:
 			printf("Conexión establecida con éxito\n");
@@ -28,17 +30,17 @@ void connect_callback(struct mosquitto *mosq, void *obj, int result) {
 	}
 }
 
-void publish_callback(struct mosquitto *mosq, void *obj, int mid){
+void log_publish_callback(struct mosquitto *mosq, void *obj, int mid){
 
 	printf("Message sent to the broker succesfully\n");
 }
 
-void disconnect_callback(struct mosquitto *mosq, void *obj, int rc){
+void log_disconnect_callback(struct mosquitto *mosq, void *obj, int rc){
 
 	printf("Disconnected from broker\n");
 }
 
-void pcap_connect(){
+void log_connect(){
 
 	int keepalive = 60;
 	bool clean_session = true;
@@ -50,29 +52,35 @@ void pcap_connect(){
 		exit(1);
 	}
   
-	mosquitto_connect_callback_set(mosq, connect_callback);
-	mosquitto_publish_callback_set(mosq, publish_callback);
-	mosquitto_disconnect_callback_set(mosq, disconnect_callback);
+	mosquitto_connect_callback_set(mosq, log_connect_callback);
+	mosquitto_publish_callback_set(mosq, log_publish_callback);
+	mosquitto_disconnect_callback_set(mosq, log_disconnect_callback);
 
-  	int connect_return = mosquitto_connect(mosq, MQTT_HOST, MQTT_PORT, keepalive);
+  	int connect_return = mosquitto_connect(mosq, MQTT_HOST, MQTT_PORT_LOG, keepalive);
 	printf("mosquitto_connect returned: %i\n", connect_return);
  
 }
 
-void pcap_disconnect(){
+void log_disconnect(){
 
 	mosquitto_destroy(mosq);
 	mosquitto_lib_cleanup();
 
 }
 
-void pcap_publish_message(char *message){
+void set_log_topic(char *new_topic){
+	MQTT_LOG_TOPIC = malloc(sizeof(char)*25);
+	snprintf(MQTT_LOG_TOPIC, 25, "logs/%s", new_topic);
+	printf("TOPIC: %s\n", MQTT_LOG_TOPIC);
+}
+
+void log_publish_message(char *message){
 
   printf("\nIntentando a publicación\n");
   int connection_status = mosquitto_loop(mosq, -1, 1);
   if(connection_status == MOSQ_ERR_NO_CONN){
 	  printf("Not connected to broker. Trying to stablish connection\n");
-  	  mosquitto_connect(mosq, MQTT_HOST, MQTT_PORT, 60);
+  	  mosquitto_connect(mosq, MQTT_HOST, MQTT_PORT_LOG, 60);
   }
   else if(connection_status == MOSQ_ERR_CONN_LOST){
 	  printf("Connection lost with broker. Reconnecting\n");
@@ -80,8 +88,8 @@ void pcap_publish_message(char *message){
 
   }
 
-  printf("Publishing %s message\n", MQTT_TOPIC);
-  int ext_code = mosquitto_publish(mosq, NULL, MQTT_TOPIC, strlen(message), message, 0, 0);
+  printf("Publishing %s message\n", MQTT_LOG_TOPIC);
+  int ext_code = mosquitto_publish(mosq, NULL, MQTT_LOG_TOPIC, strlen(message), message, 0, 0);
   switch(ext_code){
 	  case MOSQ_ERR_SUCCESS:
   		printf("mosquitto_publish (%i): success\n", ext_code);
