@@ -4,7 +4,7 @@ void set_address_type(u_char byte, BluetoothDeviceInfo *bt_info);
 
 void free_ble_dev_info(BluetoothDeviceInfo *bt_info){
 	free(bt_info->mac_addr);
-	free(bt_info->token);
+	//free(bt_info->token);
 	free(bt_info->mac_type);
 }
 
@@ -19,19 +19,15 @@ void set_ble_dev_info(BluetoothDeviceInfo *bt_info, const u_char *packet, bool r
 	bt_info->mac_type = malloc (sizeof(char)* 15);
 	int8_t rssi_dbm = packet[BLE_RSSI];
 	int rssi_int = (int)rssi_dbm;
-	int token_lenght = TOKEN_LENGHT * 2;
-	bt_info->token = malloc(sizeof(char) * token_lenght);
-	int index;
-	int printed_byte = 0;
 	
 	bt_info->dbm_signal = rssi_int;
 	snprintf(bt_info->mac_addr, 18, "%02X:%02X:%02X:%02X:%02X:%02X", packet[21],packet[20],packet[19],packet[18],packet[17],packet[16]);
 	if(random) set_address_type(packet[21], bt_info);
 	else snprintf(bt_info->mac_type, 15, "%s", "Public");
 
-	for(index = TOKEN_BYTE_INIT; index <= TOKEN_BYTE_END; index ++){
+	/*for(index = TOKEN_BYTE_INIT; index <= TOKEN_BYTE_END; index ++){
 		printed_byte += snprintf((bt_info->token + printed_byte), (token_lenght - printed_byte) +1, "%02X", packet[index]);
-	}
+	}*/
 
 }
 

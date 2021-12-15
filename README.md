@@ -1,4 +1,4 @@
-# System for tracking Bluetooth device sniffing their packets.
+#System for tracking and monitoring of wireless devices using Bluetooth
 
 This system contain two differents aproches. One of them is based on passive scanning via Ubertooth. The other one uses the HCI interface to perform active scanning of nearby devices. The bluetooth classic device are only detected by active scanning.
 
@@ -35,7 +35,7 @@ BlueZ provides support for the core Bluetooth layers and protocols. It is flexib
 	./configure --enable-library
 ```
 
->4.1 De salir o error _configure: error: rst2man is required_: Instalalo co seguinte comando e exucatr configure de novo.
+>4.1 If error _configure: error: rst2man is required_ came up you will have to install the following package and run ./configure again
 	
 		sudo apt-get install python-docutils
 	

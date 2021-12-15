@@ -39,16 +39,16 @@ $(TARGET_DIR)/% : $(TARGET_DIR)/%.o $(INFO_OBJS) $(LIST_OBJS) $(MQTT_OBJS)
 	$(CC) $(LDFLAGS) -o $@ $@.o $(INFO_OBJS) $(LIST_OBJS) $(MQTT_OBJS) $(SYSLIBS) 
 
 $(TARGET_DIR)/%.o : $(SOURCE_DIR)/%.c $(DEPS)
-	$(CC) $(CFLAGS)  -o $@ -c $< 
+	$(CC) $(CFLAGS) -o $@ -c $< 
 
 $(TARGET_DIR_INFO)/%.o : $(SOURCE_DIR_INFO)/%.c $(DEPS)
-	$(CC) $(CFLAGS)  -o $@ -c $< 
+	$(CC) $(CFLAGS) -o $@ -c $< 
 
 $(TARGET_DIR_LIST)/%.o : $(SOURCE_DIR_LIST)/%.c $(DEPS)
-	$(CC) $(CFLAGS)  -o $@ -c $< 
+	$(CC) $(CFLAGS) -o $@ -c $< 
 
 $(TARGET_DIR_MQTT)/%.o : $(SOURCE_DIR_MQTT)/%.c $(DEPS)
-	$(CC) $(CFLAGS)  -o $@ -c $< 
+	$(CC) $(CFLAGS) -o $@ -c $< 
 
 
 %.dir : 
@@ -61,4 +61,3 @@ $(TARGET_DIR_MQTT)/%.o : $(SOURCE_DIR_MQTT)/%.c $(DEPS)
 .PHONY : clean
 clean :
 	$(RM) $(TARGET_DIR)
-

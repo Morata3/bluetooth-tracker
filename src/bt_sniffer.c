@@ -12,7 +12,7 @@
 #include "info_list/bt_info_list.h"
 #include "Mqtt/pcap_publisher.h"
 
-#define TIME_TO_PUBLISH 60
+#define TIME_TO_PUBLISH 10
 
 pcap_t *handle;
 pid_t ubertooth_pid, parent_pid;
@@ -57,7 +57,7 @@ int main(int argc, char *argv[])
 	getMAC();
 	init_list(100);
 
-	// Connect to MQTT Logger
+	//TODO Connect to MQTT Logger
 	//set_log_topic(devmac);
 	//log_connect();
 
@@ -71,7 +71,7 @@ int main(int argc, char *argv[])
 	// Run ubertooth command
 	ubertooth_pid = fork();
 	if(ubertooth_pid == 0){
-		setpgid(getpid(),getpid()); //Move the process to another group process
+		setpgid(getpid(),getpid());
 		ubertooth_btle();
 	}
 
@@ -113,9 +113,8 @@ void packet_processor(u_char *args, const struct pcap_pkthdr *header, const u_ch
 
 		if(check_device_in_list(bt_dev_info.mac_addr) == 0){
 			set_list_pointer();
-			insert_ble_in_list(bt_dev_info.mac_addr, devmac, bt_dev_info.dbm_signal, bt_dev_info.mac_type, bt_dev_info.token);
-			printf("MAC: %s --> TYPE: %s\n",  bt_dev_info.mac_addr, bt_dev_info.mac_type);
-			//log_publish_message("New packet...\n");
+			insert_ble_in_list(bt_dev_info.mac_addr, devmac, bt_dev_info.dbm_signal, bt_dev_info.mac_type);
+			//printf("MAC: %s --> TYPE: %s\n",  bt_dev_info.mac_addr, bt_dev_info.mac_type);
 		}
 		free_ble_dev_info(&bt_dev_info);
 	}
@@ -125,7 +124,7 @@ void packet_processor(u_char *args, const struct pcap_pkthdr *header, const u_ch
 void ubertooth_btle(){
 	char ubertooth_command[50];
 	while(1){
-		sprintf(ubertooth_command, "timeout 60 ubertooth-btle -n -q %s > /dev/null 2>&1", FILENAME);
+		sprintf(ubertooth_command, "ubertooth-btle -n -q %s -A 38 > /dev/null 2>&1", FILENAME);
 		system(ubertooth_command);
 	}
 }
@@ -157,7 +156,7 @@ void send_and_stop(int s){
 void getMAC(){
 	FILE *fp;
 	char hci_info[50];
-	devmac = malloc(sizeof(char) * 18);
+	devmac = malloc(sizeof(char) * 25);
 	char *ret;
    
 	memset(devmac, '\0', 18);
@@ -171,7 +170,7 @@ void getMAC(){
 		ret = strstr(hci_info, "Address");
 		if(ret) strncpy(devmac, hci_info + 13, 17);
        	}
-	
+	strcat(devmac,":UB");
        	pclose(fp);
        	return;
 	    
