@@ -6,6 +6,9 @@
 #define MQTT_TOPIC "bluetooth"
 //#define MQTT_TOPIC "Televes"
 
+#define USERNAME "aimars" 
+#define PASSWORD "aimars2021"
+
 
 void pcap_publish_message(char *message);
 void pcap_connect();

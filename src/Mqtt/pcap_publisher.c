@@ -50,6 +50,7 @@ void pcap_connect(){
 		exit(1);
 	}
   
+	mosquitto_username_pw_set(mosq,USERNAME,PASSWORD);
 	mosquitto_connect_callback_set(mosq, connect_callback);
 	mosquitto_publish_callback_set(mosq, publish_callback);
 	mosquitto_disconnect_callback_set(mosq, disconnect_callback);

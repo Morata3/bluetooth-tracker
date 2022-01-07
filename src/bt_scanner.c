@@ -89,7 +89,7 @@ void packet_processor(u_char *args, const struct pcap_pkthdr *header, const u_ch
 {
 	int packet_lenght = header->caplen;
 
-	if(packet_lenght > 5 && (packet[HCI_EVENT_FRAME] == HCI_EVENT_RESULT || packet[HCI_EVENT_FRAME] == HCI_EVENT_BLE) ){
+	if(packet_lenght > 10 && (packet[HCI_EVENT_FRAME] == HCI_EVENT_RESULT || packet[HCI_EVENT_FRAME] == HCI_EVENT_BLE) ){
 		BluetoothDeviceInfo bt_dev_info;
 		int last_byte = packet_lenght - 1;
 		if(packet[HCI_EVENT_FRAME] == HCI_EVENT_RESULT) set_hci_dev_info(&bt_dev_info, packet);

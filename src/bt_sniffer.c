@@ -12,7 +12,7 @@
 #include "info_list/bt_info_list.h"
 #include "Mqtt/pcap_publisher.h"
 
-#define TIME_TO_PUBLISH 10
+#define TIME_TO_PUBLISH 60
 
 pcap_t *handle;
 pid_t ubertooth_pid, parent_pid;
@@ -106,6 +106,8 @@ void packet_processor(u_char *args, const struct pcap_pkthdr *header, const u_ch
 	const u_char packet_header = packet_data[PACKET_TYPE];
 	const u_char packet_type = packet_header & 0xF;
 
+	//printf("Lenght: %i\n", header->caplen);
+	/*
 	if(packet_type <= ADV_NONCONN_IND){
 		BluetoothDeviceInfo bt_dev_info;
 		random = is_random(packet_header);
@@ -114,10 +116,11 @@ void packet_processor(u_char *args, const struct pcap_pkthdr *header, const u_ch
 		if(check_device_in_list(bt_dev_info.mac_addr) == 0){
 			set_list_pointer();
 			insert_ble_in_list(bt_dev_info.mac_addr, devmac, bt_dev_info.dbm_signal, bt_dev_info.mac_type);
-			//printf("MAC: %s --> TYPE: %s\n",  bt_dev_info.mac_addr, bt_dev_info.mac_type);
+			printf("MAC: %s --> TYPE: %s\n",  bt_dev_info.mac_addr, bt_dev_info.mac_type);
 		}
 		free_ble_dev_info(&bt_dev_info);
 	}
+	*/
 	return;
 }
 
