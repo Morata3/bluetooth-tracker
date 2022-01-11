@@ -99,7 +99,7 @@ void packet_processor(u_char *args, const struct pcap_pkthdr *header, const u_ch
 		if(check_device_in_list(bt_dev_info.mac_addr) == 0){
 			set_list_pointer();
 			insert_hci_in_list(bt_dev_info.mac_addr, devmac, bt_dev_info.dbm_signal,bt_dev_info.mac_type, bt_dev_info.dev_class);
-			printf("MAC: %s -> TYPE: %s\n", bt_dev_info.mac_addr, bt_dev_info.mac_type);
+			//printf("MAC: %s -> TYPE: %s\n", bt_dev_info.mac_addr, bt_dev_info.mac_type);
 		}
 		free_hci_dev_info(&bt_dev_info);
 	}

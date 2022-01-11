@@ -30,7 +30,7 @@ char * get_list_message(){
 		size_t bt_info_size;
 		char *bt_info_string = bson_as_relaxed_extended_json(bt_info_list.list[index], &bt_info_size);
 
-		message_size += bt_info_size +2; //Add 12 for "[]" string
+		message_size += bt_info_size +2; //Add 2 for "[]" string
 		list_message = realloc(list_message, message_size);
 
 		if(index == 0) printed_chars += snprintf((list_message + printed_chars), (message_size - printed_chars) +1, "%s]", bt_info_string);

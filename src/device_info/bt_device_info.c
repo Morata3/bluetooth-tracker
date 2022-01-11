@@ -6,17 +6,14 @@ void free_hci_dev_info(BluetoothDeviceInfo *bt_info){
 	free(bt_info->mac_addr);
 	free(bt_info->dev_class);
 	free(bt_info->mac_type);
-	//free(bt_info->dbm_signal);
 }
 
 void set_hci_dev_info(BluetoothDeviceInfo *bt_info, const u_char *packet){
 	bt_info->mac_addr = malloc (sizeof(char) * 18);
 	bt_info->dev_class = malloc (sizeof(char)* 10);
 	bt_info->mac_type = malloc (sizeof(char)* 15);
-	//bt_info->dbm_signal = malloc(sizeof(char)* 3);
         int8_t rssi_dbm = packet[HCI_RSSI];
         int rssi_int = (int)rssi_dbm;
-	//snprintf(bt_info->dbm_signal, 3, "%i", rssi_int);
         
         bt_info->dbm_signal = rssi_int;
         snprintf(bt_info->mac_addr, 18, "%02X:%02X:%02X:%02X:%02X:%02X", packet[13],packet[12],packet[11],packet[10],packet[9],packet[8]);
@@ -33,11 +30,9 @@ void set_hci_ble_info(BluetoothDeviceInfo *bt_info, const u_char *packet, int la
 	bt_info->mac_addr = malloc (sizeof(char) * 18);
 	bt_info->dev_class = malloc (sizeof(char)* 10);
 	bt_info->mac_type = malloc (sizeof(char)* 15);
-	//bt_info->dbm_signal = malloc(sizeof(char)* 3);
 
 	int8_t rssi_dbm = packet[last_byte];
 	int rssi_int = (int)rssi_dbm;
-	//snprintf(bt_info->dbm_signal, 3, "%i", rssi_int);
 
 	bt_info->dbm_signal = rssi_int;
         snprintf(bt_info->mac_addr, 18, "%02X:%02X:%02X:%02X:%02X:%02X", packet[16],packet[15],packet[14],packet[13],packet[12],packet[11]);
