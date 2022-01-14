@@ -16,7 +16,6 @@ SYSLIBS = -lmosquitto -lpcap -lbson-1.0 -lpthread -lbluetooth
 DEPS = $(SOURCE_DIR_INFO)/bt_device_info.h
 RM = rm -r
 
-EXEC_SNIFF = bt_sniffer 
 EXEC_SCAN = bt_scanner
 INFO_SOURCES = $(notdir $(wildcard $(SOURCE_DIR_INFO)/*.c))
 LIST_SOURCES = $(notdir $(wildcard $(SOURCE_DIR_LIST)/*.c))
