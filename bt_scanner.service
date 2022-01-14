@@ -9,6 +9,8 @@ User=root
 Group=root
 ExecStart= /usr/bin/stdbuf -oL /usr/src/bluetooth_sniffer/launch_bt_scanner.sh
 StandardOutput=file:/var/log/bluetooth_sniffer/bluetooth_scanner.log
+Restart=on-failure
+RestartSec=5s
 
 [Install]
 WantedBy=multi-user.target
